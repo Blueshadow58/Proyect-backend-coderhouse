@@ -1,9 +1,7 @@
 let productsDao: any;
 let cartsDao: any;
 
-if (process.env.NODE_ENV !== "production") {
-  await import("dotenv").then((d) => d.config());
-}
+await import("dotenv").then((d) => d.config());
 
 switch (process.env.PERS) {
   case "json":
