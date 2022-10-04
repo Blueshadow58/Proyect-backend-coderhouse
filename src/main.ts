@@ -3,7 +3,8 @@ import { page404 } from "./middlewares/page404.js";
 import cors from "cors";
 const app: Express = express();
 
-await import("dotenv").then((d) => d.config());
+import dotenv from "dotenv";
+dotenv.config();
 
 const port = process.env.PORT;
 
