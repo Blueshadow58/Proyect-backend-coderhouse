@@ -17,15 +17,22 @@ app.use("/api/productos", productsRouter);
 app.use("/api/carrito", cartsRouter);
 
 // -----------------------------------------------------------------------------------------------------------------------------
+// Persistencia en mongo
+import { default as connectMongoDBSession } from "connect-mongodb-session";
+const MongoDBStore = connectMongoDBSession(session);
 
 // Session
 app.use(
   session({
-    // store: link de mongo
+    store: new MongoDBStore({
+      uri: "mongodb+srv://testSession:testSession@cluster0session.qvvgcq4.mongodb.net/?retryWrites=true&w=majority",
+      collection: "sessions",
+    }),
     secret: "mongo",
     resave: false,
     saveUninitialized: true,
-    cookie: { maxAge: 60000 },
+    // 10 min
+    cookie: { maxAge: 600000 },
   })
 );
 
@@ -53,7 +60,6 @@ app.post("/register", (req, res) => {
     // this users already exist
     return res.send(false);
   }
-
   usuarios.push({ name, password });
   // adding new user
   return res.send(true);
@@ -61,6 +67,8 @@ app.post("/register", (req, res) => {
 
 app.post("/login", (req: any, res) => {
   const { name, password } = req.body;
+
+  console.log(req.session);
 
   const usuario = usuarios.find(
     (usuario) => usuario.name == name && usuario.password == password
@@ -73,7 +81,7 @@ app.post("/login", (req: any, res) => {
   // active user
   req.user = usuarios.find((usuario) => usuario.name == req.session.name);
 
-  return res.send({ datos: req.user });
+  return res.send(req.user);
 });
 
 app.get("/logout", (req: any, res) => {
