@@ -68,8 +68,6 @@ app.post("/register", (req, res) => {
 app.post("/login", (req: any, res) => {
   const { name, password } = req.body;
 
-  console.log(req.session);
-
   const usuario = usuarios.find(
     (usuario) => usuario.name == name && usuario.password == password
   );
