@@ -8,6 +8,9 @@ dotenv.config();
 const port = process.env.PORT;
 import { productsRouter } from "./routes/productsRouter.js";
 import { cartsRouter } from "./routes/cartsRouter.js";
+import bcrypt from "bcrypt";
+import { default as connectMongoDBSession } from "connect-mongodb-session";
+const saltRounds = 10;
 
 // Middlewares
 app.use(cors());
@@ -18,7 +21,6 @@ app.use("/api/carrito", cartsRouter);
 
 // -----------------------------------------------------------------------------------------------------------------------------
 // Persistencia en mongo
-import { default as connectMongoDBSession } from "connect-mongodb-session";
 const MongoDBStore = connectMongoDBSession(session);
 
 // Session
@@ -55,31 +57,48 @@ app.use((req: any, res, next) => {
 const usuarios: any[] = [];
 app.post("/register", (req, res) => {
   const { name, password } = req.body;
-  const usuario = usuarios.find((usuario) => usuario.name === name);
+  const usuario = usuarios.find((usuario) => usuario.name == name);
+
   if (usuario) {
     // this users already exist
     return res.send(false);
   }
-  usuarios.push({ name, password });
+
+  bcrypt.genSalt(saltRounds, function (err, salt) {
+    bcrypt.hash(password, salt, function (err, password) {
+      // Store hash in your password DB.
+      usuarios.push({ name, password });
+    });
+  });
+
   // adding new user
   return res.send(true);
 });
 
-app.post("/login", (req: any, res) => {
-  const { name, password } = req.body;
+app.post("/login", async (req: any, res) => {
+  try {
+    const { name, password } = req.body;
 
-  const usuario = usuarios.find(
-    (usuario) => usuario.name == name && usuario.password == password
-  );
-  if (!usuario) {
-    // the user donest exist
-    return res.send(false);
+    const usuario = await usuarios.find((usuario) => usuario.name == name);
+
+    if (usuario) {
+      const result = await bcrypt.compare(password, usuario.password);
+      if (!result) {
+        // the password its not the same
+        return res.send(false);
+      }
+      req.session.name = name;
+      // active user
+      req.user = usuarios.find((usuario) => usuario.name == req.session.name);
+
+      return res.send(req.user);
+    } else {
+      // user dont exist
+      return res.send(false);
+    }
+  } catch (error) {
+    console.log(error);
   }
-  req.session.name = name;
-  // active user
-  req.user = usuarios.find((usuario) => usuario.name == req.session.name);
-
-  return res.send(req.user);
 });
 
 app.get("/logout", (req: any, res) => {
