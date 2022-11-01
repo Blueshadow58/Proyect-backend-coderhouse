@@ -10,14 +10,112 @@ import { productsRouter } from "./routes/productsRouter.js";
 import { cartsRouter } from "./routes/cartsRouter.js";
 import bcrypt from "bcrypt";
 import { default as connectMongoDBSession } from "connect-mongodb-session";
+import passport, { use } from "passport";
+import { Strategy as LocalStrategy } from "passport-local";
+
 const saltRounds = 10;
 
 // Middlewares
+
 app.use(cors());
+
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
+
 app.use("/api/productos", productsRouter);
 app.use("/api/carrito", cartsRouter);
+
+// -----------------------------------------------------------------------------------------------------------------------------
+// DB
+const usuarios: any[] = [];
+
+// -----------------------------------------------------------------------------------------------------------------------------
+// Passport
+
+passport.use(
+  "register",
+  new LocalStrategy(
+    {
+      passReqToCallback: true,
+    },
+    (req: any, username: any, password: any, done: any) => {
+      const user = {
+        name: "asdasd",
+        password: "asdasd",
+      };
+      usuarios.push(user);
+      return done(null, user);
+      // console.log("register");
+      // const { name, password } = req.body;
+      // console.log(name);
+      // const usuario = usuarios.find((usuario) => usuario.name == name);
+
+      // if (usuario) {
+      //   // this users already exist
+      //   return done(null, false);
+      // }
+
+      // const user: any = {
+      //   name,
+      //   password,
+      // };
+
+      // bcrypt.genSalt(saltRounds, function (err, salt) {
+      //   bcrypt.hash(password, salt, function (err, password) {
+      //     // Store hash in your password DB.
+      //     usuarios.push(user);
+      //   });
+      // });
+
+      // // adding new user
+      // return done(null, user);
+    }
+  )
+);
+
+passport.use(
+  "login",
+  new LocalStrategy((req: any, done: any) => {
+    const user = {
+      name: "asdasd",
+      password: "asdasd",
+    };
+    done(null, user);
+
+    // try {
+    //   const { name, password } = req.body;
+    //   console.log("login");
+    //   const usuario = usuarios.find((usuario) => usuario.name == name);
+
+    //   if (usuario) {
+    //     const result = bcrypt.compare(password, usuario.password);
+    //     if (!result) {
+    //       // the password its not the same
+    //       return done(null, false);
+    //     }
+    //     req.session.name = name;
+    //     // active user
+    //     req.user = usuarios.find((usuario) => usuario.name == req.session.name);
+
+    //     return done(null, req.user);
+    //   } else {
+    //     // user dont exist
+    //     return done(null, false);
+    //   }
+    // } catch (error) {
+    //   console.log(error);
+    // }
+  })
+);
+
+passport.serializeUser(function (user: any, done: any) {
+  done(null, user.name);
+});
+
+passport.deserializeUser(function (name: any, done: any) {
+  const usuario = usuarios.find((usuario) => usuario.name == name);
+  done(null, usuario);
+});
 
 // -----------------------------------------------------------------------------------------------------------------------------
 // Persistencia en mongo
@@ -37,68 +135,48 @@ app.use(
     cookie: { maxAge: 600000 },
   })
 );
-
+app.use(passport.initialize());
+app.use(passport.session());
 // Session middleware
-app.use((req: any, res, next) => {
-  req.isAuthenticated = () => {
-    if (req.session.name) {
-      return true;
-    } else {
-      return false;
-    }
-  };
-  req.logout = (done: any) => {
-    req.session.destroy(done);
-  };
-  next();
+function isAuth(req: any, res: any, next: any) {
+  if (req.isAuthenticated()) {
+    next();
+  } else {
+    return false;
+  }
+}
+
+// Routes
+app.post(
+  "/register",
+  passport.authenticate("register", {
+    failureRedirect: "/failregister",
+  }),
+  function (req, res) {
+    res.send(true);
+  }
+);
+
+app.get("/failregister", (req, res) => {
+  res.send(false);
 });
 
-// DB
-const usuarios: any[] = [];
-app.post("/register", (req, res) => {
-  const { name, password } = req.body;
-  const usuario = usuarios.find((usuario) => usuario.name == name);
+// app.get("/login", async (req: any, res) => true);
 
-  if (usuario) {
-    // this users already exist
-    return res.send(false);
-  }
+app.post(
+  "/login",
+  passport.authenticate("login", {
+    failureRedirect: "/faillogin",
+    successRedirect: "/success",
+  })
+);
 
-  bcrypt.genSalt(saltRounds, function (err, salt) {
-    bcrypt.hash(password, salt, function (err, password) {
-      // Store hash in your password DB.
-      usuarios.push({ name, password });
-    });
-  });
-
-  // adding new user
-  return res.send(true);
+app.get("/faillogin", (req, res) => {
+  res.send(false);
 });
 
-app.post("/login", async (req: any, res) => {
-  try {
-    const { name, password } = req.body;
-
-    const usuario = await usuarios.find((usuario) => usuario.name == name);
-
-    if (usuario) {
-      const result = await bcrypt.compare(password, usuario.password);
-      if (!result) {
-        // the password its not the same
-        return res.send(false);
-      }
-      req.session.name = name;
-      // active user
-      req.user = usuarios.find((usuario) => usuario.name == req.session.name);
-
-      return res.send(req.user);
-    } else {
-      // user dont exist
-      return res.send(false);
-    }
-  } catch (error) {
-    console.log(error);
-  }
+app.get("/success", (req, res) => {
+  res.send(true);
 });
 
 app.get("/logout", (req: any, res) => {
