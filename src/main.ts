@@ -8,6 +8,7 @@ dotenv.config();
 const port = process.env.PORT;
 import { productsRouter } from "./routes/productsRouter.js";
 import { cartsRouter } from "./routes/cartsRouter.js";
+import { randomsRouter } from "./routes/randomsRouter.js";
 import bcrypt from "bcrypt";
 import { default as connectMongoDBSession } from "connect-mongodb-session";
 import passport, { use } from "passport";
@@ -24,6 +25,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api/productos", productsRouter);
 app.use("/api/carrito", cartsRouter);
+app.use("/api/randoms", randomsRouter);
 
 // -----------------------------------------------------------------------------------------------------------------------------
 // DB
@@ -185,12 +187,24 @@ app.get("/logout", (req: any, res) => {
   });
 });
 
-// -----------------------------------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------
+
+app.get("/info", (req, res) => {
+  const info = {
+    path: process.argv[1],
+    pid: process.pid,
+    executionPath: process.cwd(),
+    platform: process.platform,
+    version: process.version,
+    memory: process.memoryUsage().rss,
+  };
+  res.json(info);
+});
 
 // send 404 if donest exist other routes
 app.use(page404);
 
-const server = app.listen(port, () => {
+export const server = app.listen(port, () => {
   console.log(`⚡️[server]: Server is running at https://localhost:${port}`);
 });
 server.on("error", (error) => console.log(`Error in server ${error}`));
