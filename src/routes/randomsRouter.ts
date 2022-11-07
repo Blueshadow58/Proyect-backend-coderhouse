@@ -13,7 +13,6 @@ randomsRouter.get("/", async (req: Request, res: Response) => {
   // compute.send({ time: Date.now() });
 
   compute.on("message", (result: any) => {
-    console.log(result);
     res.json(result);
   });
 });

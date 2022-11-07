@@ -189,7 +189,7 @@ app.get("/logout", (req: any, res) => {
 
 // ------------------------------------------------------------------------
 
-app.get("/info", (req, res) => {
+app.get("/api/info", (req, res) => {
   const info = {
     path: process.argv[1],
     pid: process.pid,
