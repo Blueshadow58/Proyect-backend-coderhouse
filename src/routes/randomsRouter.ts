@@ -8,10 +8,12 @@ randomsRouter.get("/", async (req: Request, res: Response) => {
   let cant: any = req.query.cant || 100000000;
   const randomArray: Array<number> = [];
 
-  const compute = fork("./child.js");
+  const compute = fork("./src/routes/child.js");
   compute.send({ randomArray: randomArray, cant: cant });
-  //   compute.send({ start: "start" });
+  // compute.send({ time: Date.now() });
+
   compute.on("message", (result: any) => {
-    res.send(result);
+    console.log(result);
+    res.json(result);
   });
 });

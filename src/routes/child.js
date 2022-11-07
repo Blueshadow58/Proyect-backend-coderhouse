@@ -6,8 +6,10 @@ process.on("message", (msg) => {
   for (let i = 0; i < parseInt(cant); i++) {
     randomArray.push(Math.floor(Math.random() * 1000));
   }
+
   randomArray.forEach((random) => {
     count[random] = (count[random] || 0) + 1;
   });
   process.send(count);
+  process.exit;
 });
